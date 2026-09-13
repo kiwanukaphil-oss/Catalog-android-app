@@ -1,0 +1,26 @@
+{
+  "date": "2026-09-13",
+  "workspace": "C:/Projects/Catalog-android-app",
+  "repository": "https://github.com/kiwanukaphil-oss/Catalog-android-app.git",
+  "catalog_commit": "ead1678",
+  "moved": [
+    "android/",
+    "docs/android-*.md",
+    "verification/android-pilot/",
+    ".test-data/android-camera/"
+  ],
+  "preserved_locally_not_committed": [
+    "Build caches and outputs",
+    "SDK local.properties",
+    "Pilot fixture data",
+    "Private camera captures"
+  ],
+  "validation": {
+    "fixture_server_tests": "passed",
+    "android_unit_tests": "passed",
+    "android_lint": "passed",
+    "debug_build": "passed",
+    "physical_device_tests": "Not rerun for this repository move"
+  },
+  "cross_repository_links": "Catalog API source links pinned to catalog commit"
+}

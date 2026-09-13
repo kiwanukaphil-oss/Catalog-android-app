@@ -1,0 +1,19 @@
+{
+  "device": "Samsung S24+ / Android 14",
+  "photoId": "d83d7226-ece0-446a-aa88-6202e2cfe946",
+  "cameraCapture": "passed",
+  "savedReview": "passed",
+  "visibleBrand": "OXFORD",
+  "visibleSize": "3XL",
+  "originalBytes": 4614281,
+  "uploadBytes": 2130765,
+  "uploadedBytesMatchPrepared": true,
+  "deliveryLinked": true,
+  "productionWrites": false,
+  "stockMutations": 0,
+  "originalRetained": true,
+  "cameraPermissionFlow": "while using app",
+  "notificationPermissionFlow": "allowed",
+  "galleryImport": "not tested",
+  "flashAndFrontCamera": "not tested"
+}

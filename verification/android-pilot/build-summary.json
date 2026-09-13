@@ -1,0 +1,41 @@
+{
+  "applicationId": "com.kline.catalog.pilot",
+  "version": "0.1.1-pilot",
+  "apkBytes": 69034292,
+  "sha256": "479cc31dfc7e2b6fa1b49bd18d3b2819642366acdec2beb78642d7da8761539a",
+  "installedDevice": "Samsung SM-A266B / Android 16",
+  "unitSuites": [
+    {
+      "name": "com.kline.pilot.data.CatalogApiTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.kline.pilot.data.UploadRecoveryTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0"
+    }
+  ],
+  "lintErrors": 0,
+  "lintWarnings": 22,
+  "productionWrites": false,
+  "secondPhysicalDeviceValidation": "persistence, upgrade, interruption, batch, restart, delivery layout and rear-camera upload pass; remaining device matrix open",
+  "realCameraValidation": "S24+ rear camera, label legibility, test upload and gallery import pass; A26 camera and flash/front-camera checks pending",
+  "installedDevices": [
+    "Samsung SM-A266B / Android 16",
+    "Samsung SM-S926U / Android 14"
+  ],
+  "installedVersions": {
+    "Samsung S24+": "0.1.1-pilot",
+    "Samsung A26": "0.1.0-pilot"
+  },
+  "additionalDeviceChecks": [
+    "expiry/account-switch recovery",
+    "content URI and system-picker import",
+    "invalid image rejection",
+    "USB test-connection recovery",
+    "in-place APK update preserves unsent draft"
+  ]
+}

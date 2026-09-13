@@ -1,0 +1,12 @@
+{
+  "photoId": "abf1d653-3940-4abe-a24f-5d57f871fba8",
+  "interruption": "USB test-port forwarding removed during submission",
+  "observedPausedUi": "Retry scheduled",
+  "restoredForwarding": true,
+  "sameIdentityAccepted": true,
+  "deliveryLinked": true,
+  "uploadedBytesMatchPrepared": true,
+  "originalRetained": true,
+  "stockMutations": 0,
+  "scope": "isolated test service; Wi-Fi/cellular transitions not covered"
+}
