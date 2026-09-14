@@ -103,16 +103,16 @@ Evidence: [build summary](../verification/android-pilot/build-summary.json), [A2
 
 **Gate:** Both phones meet capture, preservation, recovery and usability acceptance, or the owner explicitly accepts a documented exception. A26-dependent checks stay deferred while useful independent work continues within the authorised phase.
 
-## 3. Actual backend integration — pending phase confirmation
+## 3. Actual backend integration - staging verified; full acceptance open
 
-- [ ] Prepare an isolated hosted test environment with HTTPS, restricted test accounts and a test branch.
-- [ ] Validate actual authentication, reference data, upload and delivery contracts against the hosted backend.
+- [x] Prepare an isolated hosted test environment with HTTPS, restricted test accounts and a test branch. See `android-staging.md` and its September 14 verification evidence.
+- [x] Validate actual authentication, reference data, upload and delivery contracts against the hosted backend. See `android-staging.md` and its September 14 verification evidence.
 - [ ] Validate branch permissions, account isolation, session expiry and restricted cost visibility against real endpoints.
-- [ ] Verify upload identities, retries, conflict readback and already-received handling against the real service.
+- [x] Verify upload identities, retries, conflict readback and already-received handling against the real service. See `android-staging.md` and its September 14 verification evidence.
 - [ ] Capture sanitised contract fixtures for AI, matching, pricing and receiving.
 - [ ] Decide whether token refresh/revocation needs additive backend support; current pilot recovery uses reauthentication.
 - [ ] Confirm caption guidance requirements: captions in image pixels are retained; a typed guidance field is not implemented.
-- [ ] Document any required backend changes and verify they preserve the website's existing workflows.
+- [x] Document any required backend changes and verify they preserve the website's existing workflows. See `android-staging.md` and its September 14 verification evidence.
 - [ ] Pass the integration gate before enabling a production endpoint in an app build.
 
 **Gate:** Real API behaviour, permissions and failure recovery are verified in isolation, with no unintended production writes.
@@ -121,15 +121,15 @@ Evidence: [build summary](../verification/android-pilot/build-summary.json), [A2
 
 ### AI extraction and review
 
-- [ ] Submit server-side AI batches with stable submission identities and visible progress.
+- [x] Submit server-side AI batches with stable submission identities and visible progress. S24+ verifies acceptance/replay with a received photo skipped by the server; live inference acceptance remains separate.
 - [ ] Recover status after app closure, screen lock or reauthentication; make ambiguous paid retries explicit.
 - [ ] Display image evidence, uncertainty and editable extracted fields, including brand, size and sleeve type.
 - [ ] Validate captions guide extraction correctly and do not silently override contradictory evidence.
 
 ### Product matching, quantities and prices
 
-- [ ] Provide visual comparison and matching suggestions for the same model across sizes.
-- [ ] Support manual matching, unmatched products and explicit confirmation of meaningful differences.
+- [x] Provide visual comparison and matching suggestions for the same model across sizes. S24+ staging 0.1.4 verifies photo inspection, exclusions/restoration and explicit conflict resolution before signed confirmation.
+- [x] Support manual matching, unmatched products and explicit confirmation of meaningful differences. Native save/unmatch passed on S24+ in staging 0.1.4; original lots and quantities remain unreceived.
 - [ ] Make product, variant, photo, lot and sellable-unit counts clearly distinguishable.
 - [x] Build size/quantity entry and validate totals before receiving. Verified in staging 0.1.3 on S24+; see `s24-staging-draft-report.json`.
 - [x] Support permitted pricing/cost fields and protect against stale concurrent edits. Pricing review/apply/recovery/undo passed on S24+; full role acceptance remains open.
@@ -168,10 +168,10 @@ Evidence: [build summary](../verification/android-pilot/build-summary.json), [A2
 ## Practical next steps
 
 1. Finish independent prototype checks on S24+ and the controlled test environment: reboot recovery, permissions, network interruption and image-preparation recovery.
-2. When A26 returns, install 0.1.1 and finish its physical capture/import and usability checks.
+2. When A26 returns, install the current agreed build and finish its physical capture/import and usability checks.
 3. Record results here and in the prototype report; close or explicitly accept remaining prototype issues.
-4. Obtain phase confirmation, then connect to the isolated hosted backend and validate the real contracts.
-5. Build the native AI, matching and receiving journey before preparing a signed shop pilot.
+4. Complete the remaining role, live AI interruption/retry and receipt failure matrix in the isolated staging environment.
+5. Complete staff usability review of the native journey, then confirm signing and controlled rollout before preparing a shop pilot.
 
 ## Decisions and optional scope
 

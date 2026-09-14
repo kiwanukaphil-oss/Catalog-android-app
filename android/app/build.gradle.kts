@@ -12,8 +12,8 @@ android {
         applicationId = "com.kline.catalog.pilot"
         minSdk = 34
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.1.3-pilot"
+        versionCode = 5
+        versionName = "0.1.4-pilot"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Loopback is forwarded through ADB to the isolated fixture server; no production switch exists.
         buildConfigField("String", "API_ROOT", "\"http://127.0.0.1:5117/api\"")

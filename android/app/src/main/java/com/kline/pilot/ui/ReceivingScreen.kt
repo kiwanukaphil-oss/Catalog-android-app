@@ -14,6 +14,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.kline.pilot.data.*
 import kotlinx.coroutines.*
+import org.json.JSONArray
+import org.json.JSONObject
 
 /** Browse authoritative Receiving lots while the separate local capture queue remains available without a connection. */
 @Composable fun ReceivingScreen(session: PilotSession, modifier: Modifier, localPhotos: Int,
@@ -27,6 +29,20 @@ import kotlinx.coroutines.*
     var refresh by remember { mutableIntStateOf(0) }
     var selectedId by rememberSaveable { mutableStateOf("") }
     var selectedImage by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectionRaw by rememberSaveable { mutableStateOf("[]") }
+    var preparation by rememberSaveable { mutableStateOf("") }
+    val selectedLots = remember(selectionRaw) { JSONArray(selectionRaw).strings().toSet() }
+    val capabilities = remember(session.sessionJson) { JSONObject(session.sessionJson) }
+    if (preparation == "ai") {
+        AiFillScreen(session, selectedLots.toList(), modifier, navigation) { preparation = ""; refresh++ }
+        return
+    }
+    if (preparation == "matching") {
+        ProductMatchingScreen(session, selectedLots.toList(), batchId, modifier, navigation) { preparation = ""; refresh++ }
+        return
+    }
+    // Scope changes clear bulk intent so a hidden delivery can never be included accidentally.
+    LaunchedEffect(batchId, search, task, showDeliveries) { selectionRaw = "[]" }
     val query = if (showDeliveries) "/catalog-workspace/history/deliveries?search=${java.net.URLEncoder.encode(search, "UTF-8")}&page=$page" else receivingQuery(search, task, page, batchId)
     var snapshot by remember(query) { mutableStateOf<ReceivingSnapshot?>(null) }
     var deliveries by remember(query) { mutableStateOf<DeliverySnapshot?>(null) }
@@ -65,6 +81,8 @@ import kotlinx.coroutines.*
         item { Text("Prepare incoming merchandise, confirm sizes and review what needs attention.") }
         item { Button(onClick = capture, shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) { Text("Add delivery photos") } }
         if (localPhotos > 0) item { TextButton(onClick = capture) { Text("$localPhotos ${if (localPhotos == 1) "photo" else "photos"} saved on this phone") } }
+        if (capabilities.optBoolean("can_edit")) item { TextButton(onClick = { preparation = "ai" }) { Text("Background AI fill") } }
+        if (capabilities.optBoolean("can_publish")) item { TextButton(onClick = { preparation = "matching" }) { Text("Product matching") } }
         item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(showDeliveries, { showDeliveries = true; batchId = ""; search = ""; page = 1 }, label = { Text("Deliveries") })
             FilterChip(!showDeliveries, { showDeliveries = false; batchId = ""; search = ""; page = 1 }, label = { Text("Merchandise") })
@@ -72,6 +90,22 @@ import kotlinx.coroutines.*
         if (!showDeliveries && batchId.isNotEmpty()) item { Text(batchTitle, style = MaterialTheme.typography.titleMedium) }
         item { OutlinedTextField(search, { search = it; page = 1 }, label = { Text(if (showDeliveries) "Search deliveries" else "Find incoming merchandise") }, singleLine = true, modifier = Modifier.fillMaxWidth()) }
         if (!showDeliveries) item { ReceivingTaskMenu(task) { task = it; page = 1 } }
+        if (!showDeliveries && (capabilities.optBoolean("can_edit") || capabilities.optBoolean("can_publish"))) item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("${selectedLots.size} lots selected across pages")
+                Row {
+                    TextButton(onClick = {
+                        val ids = JSONArray(selectionRaw).strings().toMutableSet()
+                        ids.addAll(snapshot?.items.orEmpty().filter { !it.received && !it.cancelled }.map { it.id })
+                        if (ids.size > 1000) error = "Choose no more than 1,000 lots at a time."
+                        else selectionRaw = JSONArray(ids.toList()).toString()
+                    }, enabled = !loading) { Text("Select this page") }
+                    TextButton(onClick = { selectionRaw = "[]" }) { Text("Clear selection") }
+                }
+                if (capabilities.optBoolean("can_edit")) Button(onClick = { preparation = "ai" }, enabled = selectedLots.isNotEmpty() && capabilities.optBoolean("can_ai_extract"), modifier = Modifier.fillMaxWidth()) { Text("AI fill selected photos") }
+                if (capabilities.optBoolean("can_publish")) OutlinedButton(onClick = { preparation = "matching" }, enabled = selectedLots.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("Match selected lots") }
+            }
+        }
         item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(if (showDeliveries) deliveries?.let { "${it.total} deliveries" }.orEmpty() else snapshot?.let { "${it.total} lots" }.orEmpty(), style = MaterialTheme.typography.titleMedium)
             TextButton(onClick = { refresh++ }, enabled = !loading) { Text("Refresh receiving") }
@@ -99,6 +133,12 @@ import kotlinx.coroutines.*
             items(result.items, key = { it.id }) { row ->
                 OutlinedCard(onClick = { selectedId = row.id; selectedImage = row.imageUrl }, modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (!row.received && !row.cancelled && (capabilities.optBoolean("can_edit") || capabilities.optBoolean("can_publish"))) Checkbox(row.id in selectedLots, { include ->
+                            val ids = JSONArray(selectionRaw).strings().toMutableSet()
+                            if (include && ids.size >= 1000) error = "Choose no more than 1,000 lots at a time."
+                            else if (include) ids.add(row.id) else ids.remove(row.id)
+                            selectionRaw = JSONArray(ids.toList()).toString()
+                        })
                         StockPhoto(row.imageUrl, Modifier.size(84.dp))
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(row.name.ifBlank { "Unnamed merchandise" }, style = MaterialTheme.typography.titleMedium)

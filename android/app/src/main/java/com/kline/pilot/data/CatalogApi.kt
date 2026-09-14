@@ -46,6 +46,9 @@ class CatalogApi(private val token: String = "", private val branch: String = ""
             if (source?.request(responseLimit + 1) == true) throw IOException("The service response is too large.")
             val text = source?.readUtf8().orEmpty()
             val json = runCatching { JSONObject(text) }.getOrNull()
+                ?: if (response.isSuccessful && (path == "/catalog-workspace/product-matches" || path.contains("/restock-options?"))) {
+                    runCatching { JSONObject().put("items", org.json.JSONArray(text)) }.getOrNull()
+                } else null
             if (!response.isSuccessful) throw CatalogHttpException(response.code,
                 json?.optString("message")?.takeIf { it.isNotBlank() } ?: "The service is unavailable (${response.code}).",
                 retryAfterTimestamp(response.header("Retry-After")))

@@ -156,9 +156,9 @@ private fun stockUpdatedLabel(value: String): String = runCatching {
 private val stockImageClient = OkHttpClient.Builder().callTimeout(25, TimeUnit.SECONDS).build()
 
 /** Fetch temporary signed HTTPS photos without attaching account credentials or writing private images to a shared cache. */
-@Composable internal fun StockPhoto(url: String?, modifier: Modifier) {
+@Composable internal fun StockPhoto(url: String?, modifier: Modifier, maxDimension: Int = 800) {
     var loading by remember(url) { mutableStateOf(url?.startsWith("https://") == true) }
-    val bitmap by produceState<ImageBitmap?>(null, url) {
+    val bitmap by produceState<ImageBitmap?>(null, url, maxDimension) {
         value = null
         if (url?.startsWith("https://") == true) {
             try {
@@ -168,7 +168,7 @@ private val stockImageClient = OkHttpClient.Builder().callTimeout(25, TimeUnit.S
                         val source = requireNotNull(response.body).source()
                         check(!source.request(5L * 1024 * 1024 + 1))
                         ImageDecoder.decodeBitmap(ImageDecoder.createSource(ByteBuffer.wrap(source.readByteArray()))) { decoder, info, _ ->
-                            val ratio = minOf(1.0, 800.0 / maxOf(info.size.width, info.size.height))
+                            val ratio = minOf(1.0, maxDimension.toDouble() / maxOf(info.size.width, info.size.height))
                             decoder.setTargetSize(maxOf(1, (info.size.width * ratio).toInt()), maxOf(1, (info.size.height * ratio).toInt()))
                         }.asImageBitmap()
                     }

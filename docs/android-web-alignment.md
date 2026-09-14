@@ -17,6 +17,9 @@ Compared on 14 September 2026 with the local `C:/Projects/Kline Image Catalog` c
 | `app/components/draft-editor.tsx` | ServerDraftEditor details, physical counts and stale-edit protection |
 | `app/components/pricing.tsx` | PricingScreen selection, shared/size prices, review, apply and undo |
 | `app/components/delivery-checkout.tsx` | ReceiptScreen signed review, destination and retained receipt progress |
+| `app/components/ai-fill.tsx` | AiFillScreen durable submission, saved progress, stop and explicit retry |
+| `app/components/product-matching.tsx` | ManualMatchEditor evidence, destination, saved revision and unmatching |
+| `app/components/suggested-matches.tsx` | SuggestedMatchesScreen scoped discovery, exclusions and signed conflict review |
 
 ## Implemented in this increment
 
@@ -27,7 +30,7 @@ Compared on 14 September 2026 with the local `C:/Projects/Kline Image Catalog` c
 
 ## Explicit remaining differences
 
-The loopback pilot remains a capture/upload fixture. The separate staging build now implements hosted Receiving, category-defined draft details, physical size counts, reviewed Pricing and Stock. Pricing preserves the web's fill/revise intent, overrides, review-before-apply and undo. Receipt review follows the same signed delivery contracts. AI fill, matching, full failure acceptance and production integration remain open; this is not complete web feature parity.
+The loopback pilot remains a capture/upload fixture. The separate staging build now implements hosted Receiving, category-defined draft details, physical size counts, reviewed Pricing and Stock. Pricing preserves the web's fill/revise intent, overrides, review-before-apply and undo. Receipt review follows the same signed delivery contracts. Native AI fill and matching are implemented in 0.1.4. Full failure acceptance and production integration remain open; this is not complete web feature parity.
 
 The pilot saves a named local delivery before category selection before photo review. Multi-photo selection (up to 100 per picker session) and consecutive camera capture now follow the web interaction; each photo is prepared sequentially and stays in review until explicitly submitted. The web combines name, category and multiple photos in New delivery. The Android local selector is marked in code as a candidate for replacement during server Receiving integration. Do not delete saved deliveries or queue entries to change this presentation.
 
@@ -50,3 +53,9 @@ Debug APK, test APK, unit tests and lint passed on 14 September 2026. Lint retai
 The `webWorkspaceAlignment` emulator test passed, checking the three destinations, appearance toggle, review action, Back navigation and original-file retention. Initial attempts exposed an emulator System UI stall and an incorrect test selector for Compose navigation; the corrected test uses visible navigation text.
 
 Phone screenshots are in `verification/android-pilot/s24-alignment-*.png`. `s24-alignment-current.png` and `alignment-current.png` are diagnostic captures from before the final corrections, retained as removal candidates rather than silently deleted. The reference comparison used local web source; a live deployed-web screenshot comparison and complete web feature parity remain outstanding.
+
+## Native preparation adaptations (0.1.4)
+
+AI progress and matching use dedicated views inside Receiving so original evidence and explicit confirmations fit the phone. Bulk selections span pages; changing delivery or search scope clears the selection. The app stores uncertain AI acceptance by account and branch, preserving the same ordered photo IDs and submission key after process death. This replaces browser session storage without changing the server contract.
+
+Original-photo inspection stays inside the app, with bounded zoom and scroll controls. Existing POS destinations, conflict notes, optional material resolution, keep-separate decisions and unmatching preserve the web terminology. Advanced destination correction and the shortcut from completed AI items directly into scoped Pricing remain open.

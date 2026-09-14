@@ -24,6 +24,10 @@ The API root is `https://pos-api-production-07c3.up.railway.app/api`. The stagin
 
 - Review shared and per-size selling prices/costs with complete workspace selection, signed revisions, retained plan recovery, apply and undo.
 - Review final delivery quantities, prices and destination before sending to POS; retain signed reviews and per-product completion for safe retry.
+- Select unreceived lots across pages, retaining explicit membership and clearing it when the receiving scope changes.
+- Submit durable AI batches, retain uncertain acceptance across reopening, read server progress, stop after the current photo and require explicit consent before retrying unresolved work.
+- Compare original photos, save or retire manual product matches, and review delivery-scoped suggestions with exclusions, destination selection and conflict resolution. Matching does not receive stock.
+- Inspect private original photos at up to 4x zoom, with larger decoding confined to the open inspection view.
 
 ## Verification
 
@@ -39,6 +43,8 @@ After deployment of the storage repair, the emulator HTTPS integration test pass
 
 `StagingReceiptTest` passed on the S24+: a separate generated `Android receipt check SM-S926U` delivery was reviewed and received through the native UI. Replaying the identical signed review returned already received and Stock remained exactly three units. A repeat run recovered the received delivery and again verified exactly three units. This test intentionally added three synthetic units in staging; it did not touch production. Evidence: `s24-staging-receipt-report.json` and review/Stock screenshots.
 
+`StagingPreparationTest` verifies native AI acceptance using an already-received generated photo: its persisted submission key survives reopening, acknowledgement replay returns the same batch and the server skips inference. Manual matching and unmatching on the S24+ preserve two generated lots, their original photos and quantities without receiving stock. The suggested-group test passed on the same phone: exclude/restore membership, recorded conflict resolution and explicit identity confirmation produced a signed group without receiving stock. It uses the existing Trousers test category, which supports model codes; the shirt test category does not. Reports and screenshots use the `s24-staging-ai-*`, `s24-staging-matching-*` and `s24-staging-suggestions-*` prefixes. Both variants pass 26 JVM tests and lint, and the existing draft edit/stale-revision/navigation check passes again on S24+.
+
 ## Backend repair discovered by Android verification
 
 The deployed September 6 POS branch still sent underscored `catalog_item_id` object metadata, causing Railway storage to reject catalog uploads with an unsigned-header error. The existing reviewed host patch changes both intake and photo handoff to `catalog-item-id`. Applied narrowly in an isolated POS worktree; commit `2e138ef` advances only `catalog/workspace-release`. Nine real-PostgreSQL intake/handoff tests passed using a dedicated local test database. Production master and unrelated working changes were not touched.
@@ -47,6 +53,6 @@ Both AWS checksum settings are `WHEN_REQUIRED` in staging. The request setting w
 
 ## Remaining scope
 
-AI batch submission and matching are not implemented natively. Full receipt failure/recovery acceptance remains open. Stock movement history/POS deep links, full permissions and recovery acceptance, A26 acceptance and release signing remain open. A successful Stock read is not evidence of receipt correctness or production readiness.
+Native AI and matching are implemented in 0.1.4. Live extraction/stop/resume under connection loss, full receipt failure/recovery acceptance and staff usability acceptance remain open. Stock movement history/POS deep links, full permissions and recovery acceptance, A26 acceptance and release signing remain open. A successful Stock read is not evidence of receipt correctness or production readiness.
 
 The staging runtime was upgraded from 0.16.0 to 0.30.0 in POS staging commit `2cb7101`, deployment `0175021f-47af-462e-b450-9fc13ae70863`. All 24 packaged files match Catalog source `97cb2cb`. Canonical migrations 109–113 passed after a fresh readable backup; branch stock balances were unchanged and the temporary database proxy was closed. AI-batch, matching, Stock and delivery reads now return HTTP 200. The local workspace suite passed 26 checks. Of 272 backend tests, 268 passed initially; four outdated policy/package expectations were corrected and all 36 tests in those three suites then passed. Evidence is `verification/android-pilot/staging-{current-contracts,package-verification,workspace-local-integration,workspace-migration}.json`.

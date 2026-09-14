@@ -103,7 +103,7 @@ import java.math.BigDecimal
     LazyColumn(modifier.fillMaxSize().imePadding(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { TextButton(onClick = { navigate(close) }, enabled = !busy) { Text("Back to Receiving") } }
         item { Text("Review merchandise", style = MaterialTheme.typography.headlineMedium) }
-        item { StockPhoto(imageUrl, Modifier.fillMaxWidth().height(220.dp)) }
+        item { EvidencePhoto(imageUrl ?: item?.textOrEmpty("image_url")?.ifBlank { null }) }
         item(key = "draft-feedback") {
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             if (error.isNotEmpty()) Text(error, color = MaterialTheme.colorScheme.error)

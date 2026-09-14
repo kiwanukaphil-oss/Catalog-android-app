@@ -4,11 +4,11 @@ Track completed work and remaining phases in the [Android checklist and roadmap]
 
 Native Kotlin / Jetpack Compose application for the first capture-and-recovery phase. The app is named **K-Line Pilot**, package `com.kline.catalog.pilot`, and requires Android 14 or later. It connects exclusively to an isolated loopback fixture service; there is no production endpoint selector.
 
-The separate **K-Line Staging** build connects to the isolated hosted API, supports actual uploads, hosted Receiving, draft details/counts, reviewed Pricing and live Stock, and installs alongside Pilot with independent private data. See [staging setup and verification](../docs/android-staging.md).
+The separate **K-Line Staging** build connects to the isolated hosted API, supports actual uploads, hosted Receiving, draft details/counts, reviewed Pricing, background AI fill, product matching and live Stock, and installs alongside Pilot with independent private data. See [staging setup and verification](../docs/android-staging.md).
 
 ## What is implemented
 
-Current build: **0.1.3**, with web-aligned navigation, light/dark appearance, multi-photo selection and consecutive camera capture. The unavailable A26 still has 0.1.0. Version 0.1.1 introduced expired-session messaging and sign-out cancellation ordering.
+Current build: **0.1.4**, with web-aligned navigation, light/dark appearance, multi-photo selection and consecutive camera capture. The unavailable A26 still has 0.1.0. Version 0.1.1 introduced expired-session messaging and sign-out cancellation ordering.
 
 - Fixture sign-in, authorised branch selection and Android Keystore-encrypted session storage.
 - Full category breadcrumbs, cached by account and branch, and locally saved delivery drafts.
@@ -81,4 +81,4 @@ The fixture service exposes loopback-only `/__test/fault` controls for dropped u
 
 See the [prototype report](../docs/android-prototype-report.md) for the completed checks, including S24+ gallery import, session recovery and in-place app update. Complete the remaining real-phone matrix: A26 camera/gallery, flash/front camera, reboot, real network transitions, low storage and denied permissions. Confirm photo-retention policy, staff account usage and an isolated hosted integration environment before connecting to the real API. WorkManager reschedules persisted work; Android may defer it during sleep, and a manually force-stopped app must be reopened. [Persistent background work](https://developer.android.com/develop/background-work/background-tasks/persistent)
 
-Signed distribution, production use, AI review and matching remain open. Hosted Receiving, count editing, Pricing and Stock are available in the separate staging build; see its verification report for device coverage. See the [screen specification](../docs/android-screen-flow.md) and [API contract](../docs/android-api-contract.md).
+Signed distribution, production use and full two-phone acceptance remain open. Native AI review and matching are available in staging 0.1.4. Hosted Receiving, count editing, Pricing and Stock are available in the separate staging build; see its verification report for device coverage. See the [screen specification](../docs/android-screen-flow.md) and [API contract](../docs/android-api-contract.md).

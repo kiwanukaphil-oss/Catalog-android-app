@@ -1,0 +1,29 @@
+{
+  "checked_at": "2026-09-14T12:53:26.153021+00:00",
+  "app_version": "0.1.4-pilot-staging",
+  "device": "SM-S926U",
+  "web_reference": "97cb2cb",
+  "jvm_tests": {
+    "Debug": {
+      "tests": 26,
+      "failures": 0
+    },
+    "Staging": {
+      "tests": 26,
+      "failures": 0
+    }
+  },
+  "device_checks": [
+    "AI persisted acceptance and same-key replay (received fixture skipped without inference)",
+    "Manual matching and unmatching preserve original files and unreceived quantities",
+    "Suggested group exclusions/restoration and explicit conflict confirmation",
+    "Draft edits, stale revision rejection and unsaved-navigation protection"
+  ],
+  "production_changed": false,
+  "remaining": [
+    "Live inference interruption, stop/resume and paid-retry acceptance",
+    "A26 and staff usability acceptance",
+    "Advanced destination correction and scoped AI-to-Pricing shortcut",
+    "Release signing and production rollout"
+  ]
+}

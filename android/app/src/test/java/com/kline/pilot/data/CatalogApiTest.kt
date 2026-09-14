@@ -82,4 +82,16 @@ class CatalogApiTest {
             assertEquals(503, error.status)
         }
     }
+    /** Preserve the two workspace array contracts without weakening ordinary object-response validation. */
+    @Test fun matchingAndRestockListsDecodeTheirArrayContracts() {
+        MockWebServer().use { server ->
+            val api = CatalogApi(root = server.url("/api").toString())
+            server.enqueue(MockResponse().setBody("""[{"id":"saved-group","revision":"signed"}]"""))
+            assertEquals("saved-group", api.request("/catalog-workspace/product-matches").getJSONArray("items").getJSONObject(0).getString("id"))
+            server.enqueue(MockResponse().setBody("[]"))
+            assertEquals(0, api.request("/catalog-workspace/items/one/restock-options?search=shirt").getJSONArray("items").length())
+            server.enqueue(MockResponse().setBody("[]"))
+            assertThrows(java.io.IOException::class.java) { api.request("/catalog-workspace/items/one") }
+        }
+    }
 }
