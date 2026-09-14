@@ -6,7 +6,7 @@ Native Kotlin / Jetpack Compose application for the first capture-and-recovery p
 
 ## What is implemented
 
-Latest pilot: **0.1.1**, installed and verified on the S24+. The unavailable A26 still has 0.1.0. Version 0.1.1 fixes expired-session messaging and waits for sign-out cancellation before replacing account work.
+Latest pilot: **0.1.2**, with web-aligned navigation, light/dark appearance, multi-photo selection and consecutive camera capture. The unavailable A26 still has 0.1.0. Version 0.1.1 introduced expired-session messaging and sign-out cancellation ordering.
 
 - Fixture sign-in, authorised branch selection and Android Keystore-encrypted session storage.
 - Full category breadcrumbs, cached by account and branch, and locally saved delivery drafts.
@@ -16,7 +16,7 @@ Latest pilot: **0.1.1**, installed and verified on the S24+. The unavailable A26
 - Independent uploaded / needs review / needs attention states. No stock-receipt endpoint exists in the pilot service.
 - Versioned Room schema with a non-destructive 1-to-2 migration.
 
-Review and Stock tabs explain the next increments. They do not simulate working AI, matching or stock screens.
+Receiving, Pricing and Stock match the web workspace navigation. Pricing and Stock tabs explain the next increments. See the [UI alignment policy](../docs/android-web-alignment.md). They do not simulate working AI, matching or stock screens.
 
 ## Build
 
@@ -47,7 +47,7 @@ adb shell am start -n com.kline.catalog.pilot/com.kline.pilot.MainActivity
 
 For two connected phones, add `-s <device-id>` to each ADB command. Sign in with **pilot / pilot-only**. A second fixture account is **pilot2 / pilot-only**, for account-isolation testing. These credentials have no production access.
 
-Create a delivery, choose its category, capture/import a photo, open the saved photo, then choose **Upload to test delivery**. Offline capture is available after sign-in and category caching. Upload requires the local service and USB forwarding. Disconnecting USB intentionally makes this build offline; it is not yet a shop-ready network deployment.
+Create a delivery, choose its category, select photos or open the camera and take consecutive photos, choose **Done**, then open a saved photo, then choose **Add to Receiving**. Offline capture is available after sign-in and category caching. Upload requires the local service and USB forwarding. Disconnecting USB intentionally makes this build offline; it is not yet a shop-ready network deployment.
 
 Sign-out locks the local queue without deleting photos. Reauthentication uses the same fixture account. Photo originals are retained; uninstalling/clearing app data removes Android's private storage. Do not uninstall during retention or update tests; use `adb install -r` with the same signing key.
 

@@ -14,6 +14,8 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import androidx.work.WorkManager
 import com.kline.pilot.data.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
@@ -67,10 +69,71 @@ class PilotDeviceTest {
         Unit
     }
 
+    /** Verify the shared workspace destinations, appearance and return from saved-photo review on an emulator. */
+    @Test fun webWorkspaceAlignment(): Unit = runBlocking {
+        org.junit.Assume.assumeTrue(android.os.Build.MODEL.contains("sdk_gphone"))
+        val token = CatalogApi().login("pilot", "pilot-only")
+        val session = decodeSession(CatalogApi(token).session(), token)
+        app.sessions.save(session)
+        val reference = CatalogApi(token, session.branch).reference()
+        val category = categoryChoices(reference).first { it.path == "Clothing / Shirts / Formal" }
+        val dao = app.database.pilotDao()
+        dao.cacheReference(ReferenceCache(session.owner, session.branch, reference.toString()))
+        val delivery = Delivery(UUID.randomUUID().toString(), session.owner, session.branch, "Web alignment check")
+        dao.insertDelivery(delivery)
+        val photo = PhotoStorage(app).prepare(Uri.fromFile(fixtureImage()), session, delivery, category)
+        dao.insertPhoto(photo)
+        app.startActivity(Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+        assertTrue(device.wait(Until.hasObject(By.text("FROM ARRIVAL TO READY")), 15_000))
+        assertTrue(device.takeScreenshot(File(app.filesDir, "alignment-receiving-light.png")))
+        device.findObject(By.text("Pricing")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Pricing is not available in this pilot")), 5_000))
+        device.findObject(By.text("Stock")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Stock is not available in this pilot")), 5_000))
+        device.findObjects(By.text("Receiving")).last().click()
+        device.findObject(By.desc("Use dark appearance")).click()
+        assertTrue(device.wait(Until.hasObject(By.desc("Use light appearance")), 5_000))
+        device.waitForIdle()
+        assertTrue(device.takeScreenshot(File(app.filesDir, "alignment-receiving-dark.png")))
+        device.findObject(By.desc("Use light appearance")).click()
+        device.swipe(device.displayWidth / 2, device.displayHeight * 3 / 4, device.displayWidth / 2, device.displayHeight / 3, 25)
+        assertTrue(device.wait(Until.hasObject(By.text("Review saved photo")), 5_000))
+        device.findObjects(By.text("Review saved photo")).first().click()
+        assertTrue(device.wait(Until.hasObject(By.text("Add to Receiving")), 5_000))
+        assertTrue(device.takeScreenshot(File(app.filesDir, "alignment-photo-review.png")))
+        device.pressBack()
+        assertTrue(device.wait(Until.hasObject(By.text("Receiving")), 5_000))
+        assertEquals("review", dao.photo(photo.id)?.state)
+        assertTrue(File(photo.originalPath).exists())
+    }
+
     @Test fun visibleDeliveryScreen() {
         app.startActivity(Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue("Unlock the phone for visual checks", device.wait(Until.hasObject(By.text("Bring it in.")), 15_000))
+        assertTrue("Unlock the phone for visual checks", device.wait(Until.hasObject(By.text("FROM ARRIVAL TO READY")), 15_000))
         assertTrue(device.takeScreenshot(File(app.filesDir, "pilot-deliveries.png")))
+    }
+
+    /** Import valid, invalid and valid selections together; keep both originals without automatically submitting either photo. */
+    @Test fun multiplePhotoImportKeepsSuccessfulSelections(): Unit = runBlocking {
+        org.junit.Assume.assumeTrue(android.os.Build.MODEL.contains("sdk_gphone"))
+        val session = requireNotNull(app.sessions.read())
+        val dao = app.database.pilotDao()
+        val category = categoryChoices(CatalogApi(session.token, session.branch).reference()).first()
+        val delivery = Delivery(UUID.randomUUID().toString(), session.owner, session.branch, "Multiple-photo import check")
+        dao.insertDelivery(delivery)
+        val validPhoto = Uri.fromFile(fixtureImage())
+        val invalidPhoto = File(app.cacheDir, "invalid-multi-photo.txt").apply { writeText("Not an image") }
+        val model = withContext(Dispatchers.Main) { PilotViewModel(app) }
+        val deadline = System.currentTimeMillis() + 10_000
+        while (model.state.value.categories.isEmpty() && System.currentTimeMillis() < deadline) Thread.sleep(100)
+        model.importPhotos(listOf(validPhoto, Uri.fromFile(invalidPhoto), validPhoto), delivery, category).join()
+        val saved = dao.photos(session.owner, session.branch).first().filter { it.deliveryId == delivery.id }
+        assertEquals(2, saved.size)
+        assertEquals(2, saved.map { it.id }.distinct().size)
+        assertTrue(saved.all { it.state == "review" && File(it.originalPath).length() > 0 })
+        assertTrue(model.state.value.error.contains("2 of 3 photos saved"))
+        assertFalse(model.state.value.busy)
+        assertEquals("2 of 3 photos saved on this phone.", model.state.value.progressNote)
     }
 
     /** Capture only the emulator's synthetic scene, then inspect the actual Compose review screen and saved queue entry. */
@@ -83,16 +146,21 @@ class PilotDeviceTest {
         device.findObject(By.text("Choose a full category path")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Clothing / Shirts / Formal")), 5_000))
         device.findObject(By.text("Clothing / Shirts / Formal")).click()
-        device.findObject(By.text("Capture")).click()
+        device.findObject(By.text("Open camera")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Take photo")), 15_000))
-        val deadline = System.currentTimeMillis() + 15_000
-        while (System.currentTimeMillis() < deadline && device.findObject(By.text("Take photo"))?.isEnabled != true) Thread.sleep(200)
-        device.findObject(By.text("Take photo")).click()
-        val saveDeadline = System.currentTimeMillis() + 15_000
-        while (System.currentTimeMillis() < saveDeadline && dao.photos(session.owner, session.branch).first().size == before) Thread.sleep(200)
-        assertEquals(before + 1, dao.photos(session.owner, session.branch).first().size)
+        repeat(2) { index ->
+            val deadline = System.currentTimeMillis() + 15_000
+            while (System.currentTimeMillis() < deadline && !device.hasObject(By.text("Take photo"))) Thread.sleep(200)
+            device.findObject(By.text("Take photo")).click()
+            val saveDeadline = System.currentTimeMillis() + 15_000
+            while (System.currentTimeMillis() < saveDeadline && dao.photos(session.owner, session.branch).first().size < before + index + 1) Thread.sleep(200)
+            assertEquals(before + index + 1, dao.photos(session.owner, session.branch).first().size)
+            assertTrue(device.wait(Until.hasObject(By.text("Take photo")), 5_000))
+        }
+        device.findObject(By.text("Done")).click()
+        device.swipe(device.displayWidth / 2, device.displayHeight * 3 / 4, device.displayWidth / 2, device.displayHeight / 3, 25)
         assertTrue(device.wait(Until.hasObject(By.text("Review saved photo")), 5_000))
-        device.findObject(By.text("Review saved photo")).click()
+        device.findObjects(By.text("Review saved photo")).first().click()
         assertTrue(device.wait(Until.hasObject(By.text("Review photo")), 5_000))
         assertTrue(device.wait(Until.hasObject(By.desc("Saved merchandise photo")), 10_000))
         device.takeScreenshot(File(app.filesDir, "pilot-photo-review.png"))

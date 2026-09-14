@@ -1,8 +1,10 @@
 package com.kline.pilot.ui
 
 import android.Manifest
+import android.app.Activity
 import android.graphics.ImageDecoder
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -13,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -26,6 +29,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -38,19 +43,25 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.LocalDate
 
-private val Pine = Color(0xFF20564D)
-private val Paper = Color(0xFFF7F6F1)
-private val Ink = Color(0xFF182D28)
-
 /** An intentionally small native pilot makes the saved/uploaded boundary visible throughout the capture workflow. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun PilotScreen(model: PilotViewModel) {
     val state by model.state.collectAsStateWithLifecycle()
-    MaterialTheme(colorScheme = lightColorScheme(primary = Pine, background = Paper, surface = Paper,
-        onSurface = Ink, secondaryContainer = Color(0xFFE4EDE7))) {
-        Surface(Modifier.fillMaxSize()) {
+    var darkAppearance by rememberSaveable { mutableStateOf(false) }
+    val view = LocalView.current
+    SideEffect {
+        // Match system-bar icon contrast to the in-app appearance toggle, not the phone's system theme.
+        (view.context as? Activity)?.window?.let { window ->
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = !darkAppearance
+                isAppearanceLightNavigationBars = !darkAppearance
+            }
+        }
+    }
+    CatalogTheme(darkAppearance) {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             if (state.session == null) SignInScreen(state, model::signIn)
-            else key(state.session!!.owner, state.session!!.branch) { DeliveryWorkspace(state, model) }
+            else key(state.session!!.owner, state.session!!.branch) { DeliveryWorkspace(state, model, darkAppearance) { darkAppearance = !darkAppearance } }
             if (state.error.isNotEmpty()) AlertDialog(onDismissRequest = model::clearError,
                 title = { Text("Action needed") }, text = { Text(state.error) },
                 confirmButton = { TextButton(onClick = model::clearError) { Text("Got it") } })
@@ -62,17 +73,17 @@ private val Ink = Color(0xFF182D28)
 @Composable private fun SignInScreen(state: PilotUiState, signIn: (String, String) -> Unit) {
     var username by rememberSaveable { mutableStateOf("pilot") }
     var password by remember { mutableStateOf("") }
-    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(28.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Spacer(Modifier.height(40.dp))
-        Text("K / LINE", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = Pine)
-        Text("A clearer way\nto bring stock in.", style = MaterialTheme.typography.headlineLarge)
-        Text("ANDROID PILOT · TEST DATA", style = MaterialTheme.typography.labelLarge, color = Pine)
-        Text("Capture now. Keep every photo safe. Follow each upload from your phone to its delivery.")
+        Text("K\u2014LINE.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+        Text("Merchandise workspace", style = MaterialTheme.typography.headlineMedium)
+        Text("ANDROID PILOT · TEST DATA", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        Text("Sign in to your test workspace.")
         OutlinedTextField(username, { username = it }, label = { Text("Username") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(password, { password = it }, label = { Text("Password") }, singleLine = true,
             visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
         Button(onClick = { signIn(username, password); password = "" }, enabled = !state.busy,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)) { Text(if (state.busy) "Connecting…" else "Sign in to pilot") }
+            shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(if (state.busy) "Connecting…" else "Sign in") }
         Text("Test account: pilot / pilot-only\nUse the connected test workstation. Do not use your shop password.",
             style = MaterialTheme.typography.bodySmall)
     }
@@ -80,7 +91,7 @@ private val Ink = Color(0xFF182D28)
 
 /** The delivery remains selected explicitly; every category option includes its ancestry rather than a repeated leaf label. */
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun DeliveryWorkspace(state: PilotUiState, model: PilotViewModel) {
+@Composable private fun DeliveryWorkspace(state: PilotUiState, model: PilotViewModel, darkAppearance: Boolean, toggleAppearance: () -> Unit) {
     val session = state.session!!
     var deliveryId by rememberSaveable { mutableStateOf("") }
     val delivery = state.deliveries.firstOrNull { it.id == deliveryId } ?: state.deliveries.firstOrNull()
@@ -94,15 +105,17 @@ private val Ink = Color(0xFF182D28)
     var showCamera by rememberSaveable { mutableStateOf(false) }
     var reviewId by rememberSaveable { mutableStateOf<String?>(null) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null && delivery != null && category != null) model.importPhoto(uri, delivery, category)
+    // Keep the delivery position while camera or photo review temporarily replaces the workspace.
+    val receivingScroll = rememberLazyListState()
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(100)) { uris ->
+        if (uris.isNotEmpty() && delivery != null && category != null) model.importPhotos(uris, delivery, category)
     }
     val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val photos = state.photos.filter { it.deliveryId == delivery?.id }
     val selectedPhoto = state.photos.firstOrNull { it.id == reviewId }
     if (showCamera && delivery != null && category != null) {
-        CaptureScreen(onClose = { showCamera = false }, onPhoto = { uri ->
-            model.importPhoto(uri, delivery, category); showCamera = false
+        CaptureScreen(saving = state.busy, savedPhotos = photos.size, onClose = { showCamera = false }, onPhoto = { uri ->
+            model.importPhoto(uri, delivery, category)
         }); return
     }
     if (selectedPhoto != null) {
@@ -112,17 +125,21 @@ private val Ink = Color(0xFF182D28)
         }); return
     }
     Scaffold(topBar = {
-        TopAppBar(title = { Column { Text("K-Line", fontWeight = FontWeight.Bold); Text("ANDROID PILOT · TEST DATA", style = MaterialTheme.typography.labelSmall) } },
-            actions = { IconButton(onClick = { model.refresh() }, enabled = !state.busy) { Icon(Icons.Outlined.Refresh, "Refresh uploads") }
+        TopAppBar(title = { Column { Text("K\u2014LINE.", fontWeight = FontWeight.Bold); Text("ANDROID PILOT · TEST DATA", style = MaterialTheme.typography.labelSmall) } },
+            actions = { IconButton(onClick = toggleAppearance) { Icon(if (darkAppearance) Icons.Outlined.LightMode else Icons.Outlined.DarkMode, if (darkAppearance) "Use light appearance" else "Use dark appearance") }
+                IconButton(onClick = { model.refresh() }, enabled = !state.busy) { Icon(Icons.Outlined.Refresh, "Refresh uploads") }
                 IconButton(onClick = { model.signOut() }, enabled = !state.busy) { Icon(Icons.Outlined.Logout, "Sign out and lock drafts") } })
     }, bottomBar = {
-        NavigationBar {
-            listOf("Deliveries" to Icons.Outlined.Inventory2, "Review" to Icons.Outlined.FactCheck, "Stock" to Icons.Outlined.Storefront)
+        NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+            listOf("Receiving" to Icons.Outlined.MoveToInbox, "Pricing" to Icons.Outlined.Sell, "Stock" to Icons.Outlined.Inventory2)
                 .forEachIndexed { index, (label, icon) -> NavigationBarItem(selected = tab == index, onClick = { tab = index },
-                    icon = { Icon(icon, label) }, label = { Text(label) }) }
+                    icon = { Icon(icon, null) }, label = { Text(label) },
+                    colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary, unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant, indicatorColor = MaterialTheme.colorScheme.secondaryContainer)) }
         }
     }) { padding ->
-        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        LazyColumn(Modifier.fillMaxSize().padding(padding), state = receivingScroll, contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
                 OutlinedButton(onClick = { selectBranch = true }, enabled = !state.busy) {
                     Icon(Icons.Outlined.LocationOn, null); Spacer(Modifier.width(6.dp))
@@ -130,47 +147,51 @@ private val Ink = Color(0xFF182D28)
                 }
             }
             if (tab != 0) {
-                item { Text(if (tab == 1) "Review with confidence" else "Know what is ready", style = MaterialTheme.typography.headlineMedium) }
-                item { InfoCard(if (tab == 1) "AI, matching and receiving come next." else "Stock lookup comes next.",
-                    "This first pilot tests capture and upload recovery. Uploaded photos are not received stock.") }
+                item { Text(if (tab == 1) "Pricing" else "Stock", style = MaterialTheme.typography.headlineMedium) }
+                item { InfoCard(if (tab == 1) "Pricing is not available in this pilot" else "Stock is not available in this pilot",
+                    "Use the web workspace for this task. This test app supports photo capture and upload only; uploaded photos are not received stock.") }
             } else {
-                item { Text("Bring it in.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.SemiBold) }
-                item { Text("Capture and organise incoming stock.\nYour photos stay safe on this phone.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                item { Text("FROM ARRIVAL TO READY", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                item { Text("Receiving", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold) }
+                item { Text("Add delivery photos and track uploads. Photos are saved on this phone before upload.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Current delivery", style = MaterialTheme.typography.titleLarge)
-                    TextButton(onClick = { newDelivery = true }, enabled = !state.busy) { Icon(Icons.Outlined.Add, null); Text("New") }
+                    Text("Delivery", style = MaterialTheme.typography.titleMedium)
+                    TextButton(onClick = { newDelivery = true }, enabled = !state.busy) { Icon(Icons.Outlined.Add, null); Text("New delivery") }
                 } }
-                if (state.deliveries.isEmpty()) item { InfoCard("Start your first delivery", "Create a delivery, choose its full category path, then capture or import a photo.") }
+                if (state.deliveries.isEmpty()) item { InfoCard("Start your first delivery", "Create a delivery, choose a category, then open the camera or choose photos.") }
                 items(listOfNotNull(delivery), key = { it.id }) { candidate ->
                     val count = state.photos.count { it.deliveryId == candidate.id }
                     Card(onClick = { selectDelivery = true }, colors = CardDefaults.cardColors(
-                        containerColor = if (candidate.id == delivery?.id) MaterialTheme.colorScheme.secondaryContainer else Color.White)) {
+                        containerColor = if (candidate.id == delivery?.id) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface)) {
                         Row(Modifier.fillMaxWidth().padding(18.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column(Modifier.weight(1f)) { Text(candidate.title, fontWeight = FontWeight.SemiBold); Text("$count photos saved on this phone", style = MaterialTheme.typography.bodySmall) }
-                            Icon(Icons.Outlined.ExpandMore, "Choose another delivery", tint = Pine)
+                            Icon(Icons.Outlined.ExpandMore, "Choose another delivery", tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
                 if (delivery != null) {
                     item { OutlinedCard(onClick = { selectCategory = true }, modifier = Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(18.dp)) { Text("PHOTO CATEGORY", style = MaterialTheme.typography.labelSmall)
+                        Column(Modifier.padding(18.dp)) { Text("Category", style = MaterialTheme.typography.labelSmall)
                             Text(category?.path ?: "Choose a full category path", style = MaterialTheme.typography.titleMedium)
+                            Text(if (category != null) "Photos will be added to ${category.path}" else "Choose a category before adding photos to Receiving.", style = MaterialTheme.typography.bodySmall)
                             Text(state.referenceNote, style = MaterialTheme.typography.bodySmall) }
                     } }
                     item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Button(onClick = { showCamera = true }, enabled = category != null && session.canUpload && !state.busy, modifier = Modifier.weight(1f).heightIn(min = 54.dp)) {
-                            Icon(Icons.Outlined.PhotoCamera, null); Spacer(Modifier.width(8.dp)); Text("Capture") }
+                        Button(onClick = { showCamera = true }, enabled = category != null && session.canUpload && !state.busy, shape = MaterialTheme.shapes.medium, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
+                            Text("Open camera") }
                         OutlinedButton(onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                            enabled = category != null && session.canUpload && !state.busy, modifier = Modifier.weight(1f).heightIn(min = 54.dp)) {
-                            Icon(Icons.Outlined.PhotoLibrary, null); Spacer(Modifier.width(8.dp)); Text("Import") }
+                            enabled = category != null && session.canUpload && !state.busy, shape = MaterialTheme.shapes.medium, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
+                            Text("Choose photos") }
                     } }
-                    if (state.busy) item { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("Saving safely…", style = MaterialTheme.typography.bodySmall) }
+                    if (state.busy) item { LinearProgressIndicator(Modifier.fillMaxWidth()); Text(state.progressNote.ifEmpty { "Saving changes..." }, style = MaterialTheme.typography.bodySmall) }
+                    if (!state.busy && state.progressNote.isNotEmpty()) item { Text(state.progressNote, style = MaterialTheme.typography.bodySmall) }
                     item { Text("${photos.count { it.state == "complete" }} uploaded · ${photos.count { it.state != "complete" }} on phone", style = MaterialTheme.typography.titleMedium) }
                     items(photos, key = { it.id }) { photo -> PhotoRow(photo) { reviewId = photo.id } }
                 }
             }
         }
     }
+    // Candidate for replacement when server Receiving is integrated: the local delivery selector below.
     if (newDelivery) NewDeliveryDialog({ newDelivery = false }) { model.createDelivery(it); deliveryId = ""; newDelivery = false }
     if (selectDelivery) AlertDialog(onDismissRequest = { selectDelivery = false }, title = { Text("Choose delivery") },
         text = { LazyColumn(Modifier.heightIn(max = 400.dp)) { items(state.deliveries, key = { it.id }) { candidate ->
@@ -192,13 +213,14 @@ private val Ink = Color(0xFF182D28)
 }
 
 @Composable private fun InfoCard(title: String, description: String) {
-    Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium); Text(description)
         }
     }
 }
 
+/** Save the local delivery name before capture so interrupted work keeps its destination. */
 @Composable private fun NewDeliveryDialog(close: () -> Unit, save: (String) -> Unit) {
     var title by rememberSaveable { mutableStateOf("Delivery · ${LocalDate.now()}") }
     AlertDialog(onDismissRequest = close, title = { Text("New delivery") },
@@ -209,11 +231,11 @@ private val Ink = Color(0xFF182D28)
 
 /** Show transport status alongside the original full category path, even when the active capture category changes. */
 @Composable private fun PhotoRow(photo: PendingPhoto, open: () -> Unit) {
-    Card(onClick = open, colors = CardDefaults.cardColors(containerColor = Color.White)) {
+    Card(onClick = open, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             LocalPhoto(photo.uploadPath, Modifier.size(76.dp), 180)
             Column(Modifier.weight(1f)) {
-                Text(stateLabel(photo.state), color = if (photo.state == "complete") Pine else Ink, fontWeight = FontWeight.SemiBold)
+                Text(stateLabel(photo.state), color = if (photo.state == "complete") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
                 Text(photo.categoryPath, style = MaterialTheme.typography.bodySmall)
                 Text(photo.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -230,17 +252,18 @@ fun stateLabel(state: String): String = when (state) {
 /** The prepared upload is shown at review time so caption readability is checked after resizing, not before it. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable private fun PhotoReview(photo: PendingPhoto, busy: Boolean, close: () -> Unit, signIn: () -> Unit, upload: () -> Unit) {
+    BackHandler(onBack = close)
     Scaffold(topBar = { TopAppBar(title = { Text("Review photo") }, navigationIcon = {
-        IconButton(onClick = close) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back to delivery") } }) }) { padding ->
-        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        IconButton(onClick = close) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back to Receiving") } }) }) { padding ->
+        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { LocalPhoto(photo.uploadPath, Modifier.fillMaxWidth().height(370.dp), 1600) }
-            item { Text(photo.categoryPath, style = MaterialTheme.typography.titleLarge) }
+            item { Text(photo.categoryPath, style = MaterialTheme.typography.titleMedium) }
             item { Text("Check brand, size and caption legibility. This is the prepared upload; the original is retained on your phone.") }
             item { Text("${photo.uploadBytes / 1024} KB upload · ${photo.originalBytes / 1024} KB original", style = MaterialTheme.typography.bodySmall) }
             item { InfoCard(stateLabel(photo.state), photo.message) }
             if (photo.state in listOf("review", "attention", "auth", "retry", "queued")) item {
                 Button(onClick = if (photo.state == "auth") signIn else upload, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)) {
-                    Text(when (photo.state) { "review" -> "Upload to test delivery"; "auth" -> "Sign in again"; else -> "Retry saved upload" })
+                    Text(when (photo.state) { "review" -> "Add to Receiving"; "auth" -> "Sign in again"; else -> "Retry saved upload" })
                 }
             }
         }
@@ -258,5 +281,5 @@ fun stateLabel(state: String): String = when (state) {
         }.getOrNull() }
     }
     if (bitmap != null) Image(bitmap!!, "Saved merchandise photo", modifier, contentScale = ContentScale.Fit)
-    else Box(modifier.background(Color(0xFFE4E8E1)), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Image, "Photo loading") }
+    else Box(modifier.background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Image, "Photo loading") }
 }

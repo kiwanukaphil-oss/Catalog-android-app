@@ -4,6 +4,10 @@
 **Status:** Capture prototype built; A26 and S24+ reliability checks and emulator UI checks completed, with physical-phone screen/camera validation outstanding. See the [prototype report](android-prototype-report.md).  
 **References:** [Proposal](android-app-proposal.md), [devices](android-device-assessment.md), [API contract](android-api-contract.md).
 
+## UI alignment update (14 September 2026)
+
+The web catalog is now the UI/UX source of truth. See [Android/web alignment](android-web-alignment.md) for the reference baseline, implemented changes and remaining differences. The original capture prototype scope below still describes backend capabilities.
+
 ## 1. Product direction
 
 Build a native Android companion for merchandise intake through POS receiving. Reuse the current backend and website. The pilot covers the Samsung S24+ on Android 14 and Samsung A26 on Android 16; prioritise responsive behaviour on the A26 and the owner's increased display scaling on the S24+.
@@ -14,7 +18,7 @@ Treat devices as potentially shared until staff usage is confirmed. Every draft 
 
 ## 2. Navigation and screens
 
-Bottom navigation: **Deliveries · Review · Stock**. Capture is the prominent action within Deliveries. A persistent branch control and upload-status indicator remain available. Account and settings are secondary controls.
+Bottom navigation: **Receiving · Pricing · Stock**, matching the web. Deliveries and photo review are tasks within Receiving. Pricing and Stock are explicitly unavailable in the capture pilot. Capture is an action within Receiving. A persistent branch control and upload-status indicator remain available. Account and settings are secondary controls.
 
 ```mermaid
 flowchart TD

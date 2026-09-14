@@ -1,8 +1,8 @@
 # K-Line Android app: delivery checklist and roadmap
 
-**Last reviewed:** 10 September 2026.  
+**Last reviewed:** 14 September 2026.
 **Current position:** Capture-and-recovery prototype implemented; full two-phone acceptance remains open.  
-**Latest build:** K-Line Pilot 0.1.1 on S24+; A26 remains on 0.1.0 while its owner is away.
+**Latest build:** K-Line Pilot 0.1.2; S24+ update and verification recorded below. A26 remains on 0.1.0 while its owner is away.
 
 This is the current progress tracker for the Android app. The [proposal](android-app-proposal.md) explains the direction; the [prototype report](android-prototype-report.md) records detailed evidence. Existing website features do not count as completed native Android features.
 
@@ -20,7 +20,7 @@ Checked boxes mean completed within the stated scope. Unchecked boxes mean work 
 | Native AI review, matching and receiving | Not implemented | Build and verify the full merchandise-to-POS journey |
 | Release and shop rollout | Not started | Signed distribution, support preparation and controlled two-phone trial |
 
-The current APK uses a workstation-only test service through USB forwarding. It is not a production-ready POS app. Review and Stock tabs are informational placeholders. No production inventory was changed by this prototype.
+The current APK uses a workstation-only test service through USB forwarding. It is not a production-ready POS app. Pricing and Stock tabs are informational placeholders; navigation follows the web. No production inventory was changed by this prototype.
 
 ## 1. Direction and preparation
 
@@ -53,6 +53,16 @@ Evidence: [device assessment](android-device-assessment.md), [screen flow](andro
 - [x] Pause on expired sessions and resume the original account's work after reauthentication.
 - [x] Exclude pilot private data from cloud backup and device transfer.
 - [x] Build 0.1.1 and install it on S24+ with pending draft preservation verified.
+
+### Web alignment and multi-photo increment (14 September 2026)
+
+- [x] Use Receiving, Pricing and Stock navigation, web colours and matching action labels.
+- [x] Add light/dark appearance with system-bar contrast and preserve list position on review return.
+- [x] Select up to 100 photos per picker session, prepare sequentially and retain each successful import when another fails.
+- [x] Keep the camera open for consecutive captures; Done returns to Receiving without an extra capture or automatic upload.
+- [x] Show committed photo count and preparation progress; prevent overlapping preparation actions.
+
+See [web alignment](android-web-alignment.md) and [multi-photo verification](../verification/android-pilot/multi-photo-report.md). This increment continues capture development; hosted integration and the two-phone acceptance gate remain open.
 
 ### Verified evidence
 

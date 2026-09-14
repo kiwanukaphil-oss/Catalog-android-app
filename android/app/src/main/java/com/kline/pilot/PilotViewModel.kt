@@ -13,7 +13,7 @@ import java.util.UUID
 
 data class PilotUiState(val session: PilotSession? = null, val deliveries: List<Delivery> = emptyList(),
     val photos: List<PendingPhoto> = emptyList(), val categories: List<CategoryChoice> = emptyList(),
-    val busy: Boolean = false, val error: String = "", val referenceNote: String = "")
+    val busy: Boolean = false, val progressNote: String = "", val error: String = "", val referenceNote: String = "")
 
 class PilotViewModel(private val app: PilotApplication) : AndroidViewModel(app) {
     private val dao = app.database.pilotDao()
@@ -93,11 +93,29 @@ class PilotViewModel(private val app: PilotApplication) : AndroidViewModel(app) 
         require(title.trim().length in 1..120) { "Use a delivery name of 1–120 characters." }
         dao.insertDelivery(Delivery(UUID.randomUUID().toString(), session.owner, session.branch, title.trim()))
     }
-    fun importPhoto(uri: Uri, delivery: Delivery, category: CategoryChoice) = launchAction {
+    fun importPhoto(uri: Uri, delivery: Delivery, category: CategoryChoice) = importPhotos(listOf(uri), delivery, category)
+
+    /** Prepare sequentially to bound memory; commit each success and keep valid photos when another selection fails. */
+    fun importPhotos(uris: List<Uri>, delivery: Delivery, category: CategoryChoice) = launchAction {
         val session = requireNotNull(app.sessions.read())
         require(session.owner == delivery.owner && session.branch == delivery.branch && session.canUpload)
-        val photo = PhotoStorage(app).prepare(uri, session, delivery, category)
-        dao.insertPhoto(photo)
+        require(uris.size in 1..100) { "Choose up to 100 photos at a time." }
+        val failures = mutableListOf<String>()
+        var saved = 0
+        for ((index, uri) in uris.withIndex()) {
+            currentCoroutineContext().ensureActive()
+            mutableState.update { it.copy(progressNote = "Preparing photo ${index + 1} of ${uris.size}") }
+            try {
+                val photo = PhotoStorage(app).prepare(uri, session, delivery, category)
+                dao.insertPhoto(photo)
+                saved++
+            } catch (error: CancellationException) { throw error }
+              catch (error: Exception) { failures += "Photo ${index + 1}: ${error.message ?: "Could not prepare photo."}" }
+        }
+        mutableState.update { it.copy(progressNote = "$saved of ${uris.size} photos saved on this phone.") }
+        if (failures.isNotEmpty()) {
+            mutableState.update { it.copy(error = "$saved of ${uris.size} photos saved. ${failures.size} could not be saved.\n" + failures.take(3).joinToString("\n")) }
+        }
     }
     fun queuePhoto(id: String) = launchAction {
         val session = requireNotNull(app.sessions.read())
@@ -109,12 +127,18 @@ class PilotViewModel(private val app: PilotApplication) : AndroidViewModel(app) 
     }
     fun clearError() { mutableState.update { it.copy(error = "") } }
     /** UI actions report failures while keeping committed local work; cancellation remains coroutine cancellation. */
-    private fun launchAction(action: suspend () -> Unit) = viewModelScope.launch(Dispatchers.IO) {
-        if (mutableState.value.busy) return@launch
-        mutableState.update { it.copy(busy = true, error = "") }
-        try { action() }
-        catch (error: CancellationException) { throw error }
-        catch (error: Exception) { mutableState.update { it.copy(error = error.message ?: "Could not complete this action.") } }
-        finally { mutableState.update { it.copy(busy = false) } }
+    private fun launchAction(action: suspend () -> Unit): Job {
+        // Claim the UI action synchronously; rapid camera callbacks cannot both enter preparation.
+        while (true) {
+            val previous = mutableState.value
+            if (previous.busy) return Job().apply { complete() }
+            if (mutableState.compareAndSet(previous, previous.copy(busy = true, error = "", progressNote = ""))) break
+        }
+        return viewModelScope.launch(Dispatchers.IO) {
+            try { action() }
+            catch (error: CancellationException) { throw error }
+            catch (error: Exception) { mutableState.update { it.copy(error = error.message ?: "Could not complete this action.") } }
+            finally { mutableState.update { it.copy(busy = false) } }
+        }
     }
 }

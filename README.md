@@ -2,6 +2,7 @@
 
 K-Line's native Android capture and recovery pilot, maintained separately from the [web catalog](https://github.com/kiwanukaphil-oss/Kline-image-catalog).
 
+- [Android/web UI alignment](docs/android-web-alignment.md)
 - [Build, run and test instructions](android/README.md)
 - [Roadmap and completed checks](docs/android-roadmap-checklist.md)
 - [API contract](docs/android-api-contract.md)
