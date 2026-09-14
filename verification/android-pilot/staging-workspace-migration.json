@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-09-14T10:47:51.820Z",
+  "projectId": "9ce0cab6-9ab1-4da3-854b-afcf4cfa914b",
+  "migrations": [
+    "109_branch_product_assortments.sql",
+    "110_catalog_product_matches.sql",
+    "111_catalog_sleeve_length.sql",
+    "112_catalog_match_suggestions.sql",
+    "113_catalog_ai_batches.sql"
+  ],
+  "backupBytes": 3362422,
+  "archiveReadable": true,
+  "stockBalancesUnchanged": true,
+  "applied": true
+}

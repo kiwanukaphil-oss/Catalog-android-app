@@ -1,0 +1,11 @@
+{
+  "backendCommit": "2cb7101",
+  "deployment": "0175021f-47af-462e-b450-9fc13ae70863",
+  "httpStatus": {
+    "ai-batches": 200,
+    "match-suggestions": 200,
+    "product-matches": 200,
+    "stock": 200,
+    "history/deliveries": 200
+  }
+}

@@ -14,6 +14,9 @@ Compared on 14 September 2026 with the local `C:/Projects/Kline Image Catalog` c
 | `app/components/upload-category-picker.tsx` | Searchable full category paths and explicit photo destination |
 | `app/components/photo-intake.tsx` | Open camera / Choose photos actions |
 | `app/components/upload-delivery.tsx` | Delivery name and Add to Receiving terminology |
+| `app/components/draft-editor.tsx` | ServerDraftEditor details, physical counts and stale-edit protection |
+| `app/components/pricing.tsx` | PricingScreen selection, shared/size prices, review, apply and undo |
+| `app/components/delivery-checkout.tsx` | ReceiptScreen signed review, destination and retained receipt progress |
 
 ## Implemented in this increment
 
@@ -24,7 +27,7 @@ Compared on 14 September 2026 with the local `C:/Projects/Kline Image Catalog` c
 
 ## Explicit remaining differences
 
-This is still a capture/upload pilot, not complete web feature parity. Pricing and Stock explain their unavailability. AI fill, matching, quantities, receiving into POS and production integration remain later work.
+The loopback pilot remains a capture/upload fixture. The separate staging build now implements hosted Receiving, category-defined draft details, physical size counts, reviewed Pricing and Stock. Pricing preserves the web's fill/revise intent, overrides, review-before-apply and undo. Receipt review follows the same signed delivery contracts. AI fill, matching, full failure acceptance and production integration remain open; this is not complete web feature parity.
 
 The pilot saves a named local delivery before category selection before photo review. Multi-photo selection (up to 100 per picker session) and consecutive camera capture now follow the web interaction; each photo is prepared sequentially and stays in review until explicitly submitted. The web combines name, category and multiple photos in New delivery. The Android local selector is marked in code as a candidate for replacement during server Receiving integration. Do not delete saved deliveries or queue entries to change this presentation.
 

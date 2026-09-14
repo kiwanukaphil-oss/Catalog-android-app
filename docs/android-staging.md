@@ -18,7 +18,12 @@ The API root is `https://pos-api-production-07c3.up.railway.app/api`. The stagin
 - Authenticate, read `/auth/me`, then load catalog capabilities with the default branch context required by the web contract.
 - Use the real reference, delivery, upload, link and receipt-readback endpoints with the existing native queue.
 - Read Stock with the web's search, stock-state, category, brand and size filters, pagination, signed product photos, variant quantities and exact decimal retail prices.
-- Refresh visible Stock every 30 seconds and on foreground entry. Retain the previous same-scope snapshot after transient errors; clear it after account/branch/filter changes or 401/403. No stock mutation is offered.
+- Refresh visible Stock every 30 seconds and on foreground entry. Retain the previous same-scope snapshot after transient errors; clear it after account/branch/filter changes or 401/403. The Stock screen is read-only; stock receipt has a separate explicit review.
+- Browse hosted deliveries and merchandise in Receiving while preserving the independent local capture queue.
+- Edit category-defined details and confirm physical size counts with the web's signed revision contract. Preserve historical attributes, keep size edits separate from detail edits, and protect unsaved changes when navigating.
+
+- Review shared and per-size selling prices/costs with complete workspace selection, signed revisions, retained plan recovery, apply and undo.
+- Review final delivery quantities, prices and destination before sending to POS; retain signed reviews and per-product completion for safe retry.
 
 ## Verification
 
@@ -28,6 +33,12 @@ The Stock test passed on the S24+ (including private photos); evidence is `verif
 
 After deployment of the storage repair, the emulator HTTPS integration test passed: original photo identity retained, repeated upload/link produces one lot, original file retained, no stock received, and inaccessible branch rejected. The POS branch middleware returns HTTP 400 with its specific access-denied message. This verifies an invalid branch rejection, not a full role matrix. Evidence: `verification/android-pilot/staging-integration-report.json` and `staging-receiving.png`.
 
+`StagingDraftTest` passed on both the emulator and the S24+: native details save, unsaved-navigation protection, stale revision rejection, rapid consecutive size/quantity edits and authoritative confirmation of two units. This test owns the existing `Android HTTPS integration check` lot and does not receive stock. Reports and screenshots are `staging-draft-*` and `s24-staging-draft-*` in the verification directory.
+
+`StagingPricingTest` passed on the S24+: selected the owned synthetic lot, reviewed before apply, recovered the same plan after reopening, and undid to the original prices without receiving stock. Evidence: `s24-staging-pricing-report.json` and review/undo screenshots. Both build variants pass 21 JVM tests and lint; the fixture HTTP test passes.
+
+`StagingReceiptTest` passed on the S24+: a separate generated `Android receipt check SM-S926U` delivery was reviewed and received through the native UI. Replaying the identical signed review returned already received and Stock remained exactly three units. A repeat run recovered the received delivery and again verified exactly three units. This test intentionally added three synthetic units in staging; it did not touch production. Evidence: `s24-staging-receipt-report.json` and review/Stock screenshots.
+
 ## Backend repair discovered by Android verification
 
 The deployed September 6 POS branch still sent underscored `catalog_item_id` object metadata, causing Railway storage to reject catalog uploads with an unsigned-header error. The existing reviewed host patch changes both intake and photo handoff to `catalog-item-id`. Applied narrowly in an isolated POS worktree; commit `2e138ef` advances only `catalog/workspace-release`. Nine real-PostgreSQL intake/handoff tests passed using a dedicated local test database. Production master and unrelated working changes were not touched.
@@ -36,6 +47,6 @@ Both AWS checksum settings are `WHEN_REQUIRED` in staging. The request setting w
 
 ## Remaining scope
 
-Pricing, AI review, matching, quantities and stock receipt are not implemented natively. Stock movement history/POS deep links, full permissions and recovery acceptance, A26 acceptance and release signing remain open. A successful Stock read is not evidence of receipt correctness or production readiness.
+AI batch submission and matching are not implemented natively. Full receipt failure/recovery acceptance remains open. Stock movement history/POS deep links, full permissions and recovery acceptance, A26 acceptance and release signing remain open. A successful Stock read is not evidence of receipt correctness or production readiness.
 
-The deployed workspace runtime is 0.16.0; the current web source expects 0.30.0 and additional migrations/host integration. AI-batch and matching routes return 404 on this older staging runtime. Upgrade and contract verification must precede native support for those operations.
+The staging runtime was upgraded from 0.16.0 to 0.30.0 in POS staging commit `2cb7101`, deployment `0175021f-47af-462e-b450-9fc13ae70863`. All 24 packaged files match Catalog source `97cb2cb`. Canonical migrations 109–113 passed after a fresh readable backup; branch stock balances were unchanged and the temporary database proxy was closed. AI-batch, matching, Stock and delivery reads now return HTTP 200. The local workspace suite passed 26 checks. Of 272 backend tests, 268 passed initially; four outdated policy/package expectations were corrected and all 36 tests in those three suites then passed. Evidence is `verification/android-pilot/staging-{current-contracts,package-verification,workspace-local-integration,workspace-migration}.json`.

@@ -106,6 +106,8 @@ import java.time.LocalDate
     var showCamera by rememberSaveable { mutableStateOf(false) }
     var reviewId by rememberSaveable { mutableStateOf<String?>(null) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    var captureMode by rememberSaveable { mutableStateOf(false) }
+    val navigation = remember { WorkspaceNavigationGuard() }
     // Keep the delivery position while camera or photo review temporarily replaces the workspace.
     val receivingScroll = rememberLazyListState()
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(100)) { uris ->
@@ -129,20 +131,26 @@ import java.time.LocalDate
         TopAppBar(title = { Column { Text("K\u2014LINE.", fontWeight = FontWeight.Bold); Text(if (BuildConfig.IS_STAGING) "STAGING · TEST DATA" else "ANDROID PILOT · TEST DATA", style = MaterialTheme.typography.labelSmall) } },
             actions = { IconButton(onClick = toggleAppearance) { Icon(if (darkAppearance) Icons.Outlined.LightMode else Icons.Outlined.DarkMode, if (darkAppearance) "Use light appearance" else "Use dark appearance") }
                 IconButton(onClick = { model.refresh() }, enabled = !state.busy) { Icon(Icons.Outlined.Refresh, "Refresh uploads") }
-                IconButton(onClick = { model.signOut() }, enabled = !state.busy) { Icon(Icons.Outlined.Logout, "Sign out and lock drafts") } })
+                IconButton(onClick = { navigation.navigate { model.signOut() } }, enabled = !state.busy) { Icon(Icons.Outlined.Logout, "Sign out and lock drafts") } })
     }, bottomBar = {
         NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
             listOf("Receiving" to Icons.Outlined.MoveToInbox, "Pricing" to Icons.Outlined.Sell, "Stock" to Icons.Outlined.Inventory2)
-                .forEachIndexed { index, (label, icon) -> NavigationBarItem(selected = tab == index, onClick = { tab = index },
+                .forEachIndexed { index, (label, icon) -> NavigationBarItem(selected = tab == index, onClick = { navigation.navigate { tab = index; captureMode = false } },
                     icon = { Icon(icon, null) }, label = { Text(label) },
                     colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary,
                         selectedTextColor = MaterialTheme.colorScheme.primary, unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant, indicatorColor = MaterialTheme.colorScheme.secondaryContainer)) }
         }
     }) { padding ->
-        if (tab == 2 && BuildConfig.IS_STAGING) {
+        if (tab == 0 && BuildConfig.IS_STAGING && !captureMode) {
+            ReceivingScreen(session, Modifier.padding(padding), state.photos.size, navigation,
+                { navigation.navigate { selectBranch = true } }, { captureMode = true })
+        } else if (tab == 2 && BuildConfig.IS_STAGING) {
             StockScreen(session, Modifier.padding(padding)) { selectBranch = true }
+        } else if (tab == 1 && BuildConfig.IS_STAGING) {
+            PricingScreen(session, Modifier.padding(padding), navigation, { selectBranch = true }, { tab = 0 }, { tab = 2 })
         } else LazyColumn(Modifier.fillMaxSize().padding(padding), state = receivingScroll, contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (BuildConfig.IS_STAGING && captureMode) item { TextButton(onClick = { captureMode = false }) { Text("Back to Receiving") } }
             item {
                 OutlinedButton(onClick = { selectBranch = true }, enabled = !state.busy) {
                     Icon(Icons.Outlined.LocationOn, null); Spacer(Modifier.width(6.dp))

@@ -6,8 +6,29 @@ import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.File
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
+import java.net.SocketException
 
 class CatalogApiTest {
+    /** A reset may replay a read once; commercial writes must return control to identity-based reconciliation. */
+    @Test fun connectionResetRetriesAreBoundedAndReadOnly() {
+        for ((method, path, expectedCalls) in listOf(Triple("GET", "/catalog/session", 2),
+            Triple("POST", "/catalog/pricing/workspace", 2), Triple("POST", "/catalog/pricing/plans/id/apply", 1))) {
+            var calls = 0
+            val client = OkHttpClient.Builder().addInterceptor { chain ->
+                calls++
+                if (calls == 1) throw SocketException("Connection reset")
+                Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK").body("{}".toResponseBody()).build()
+            }.build()
+            val api = CatalogApi(root = "https://example.invalid/api", client = client)
+            val result = runCatching { if (method == "GET") api.request(path) else api.writeJson(path, JSONObject()) }
+            assertEquals(expectedCalls == 2, result.isSuccess)
+            assertEquals(expectedCalls, calls)
+        }
+    }
     /** Catalog capabilities require the authenticated user's default branch even before workspace selection. */
     @Test fun sessionLoadsDefaultBranchBeforeCapabilities() {
         MockWebServer().use { server ->

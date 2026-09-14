@@ -156,7 +156,7 @@ private fun stockUpdatedLabel(value: String): String = runCatching {
 private val stockImageClient = OkHttpClient.Builder().callTimeout(25, TimeUnit.SECONDS).build()
 
 /** Fetch temporary signed HTTPS photos without attaching account credentials or writing private images to a shared cache. */
-@Composable private fun StockPhoto(url: String?, modifier: Modifier) {
+@Composable internal fun StockPhoto(url: String?, modifier: Modifier) {
     var loading by remember(url) { mutableStateOf(url?.startsWith("https://") == true) }
     val bitmap by produceState<ImageBitmap?>(null, url) {
         value = null

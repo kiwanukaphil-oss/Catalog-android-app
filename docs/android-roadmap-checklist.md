@@ -117,7 +117,7 @@ Evidence: [build summary](../verification/android-pilot/build-summary.json), [A2
 
 **Gate:** Real API behaviour, permissions and failure recovery are verified in isolation, with no unintended production writes.
 
-## 4. Complete native merchandise-to-POS workflow — not implemented
+## 4. Complete native merchandise-to-POS workflow - in progress
 
 ### AI extraction and review
 
@@ -131,15 +131,15 @@ Evidence: [build summary](../verification/android-pilot/build-summary.json), [A2
 - [ ] Provide visual comparison and matching suggestions for the same model across sizes.
 - [ ] Support manual matching, unmatched products and explicit confirmation of meaningful differences.
 - [ ] Make product, variant, photo, lot and sellable-unit counts clearly distinguishable.
-- [ ] Build size/quantity entry and validate totals before receiving.
-- [ ] Support permitted pricing/cost fields and protect against stale concurrent edits.
+- [x] Build size/quantity entry and validate totals before receiving. Verified in staging 0.1.3 on S24+; see `s24-staging-draft-report.json`.
+- [x] Support permitted pricing/cost fields and protect against stale concurrent edits. Pricing review/apply/recovery/undo passed on S24+; full role acceptance remains open.
 
 ### Receiving and stock
 
-- [ ] Build receipt review with clear product, size, quantity, price and destination branch summaries.
-- [ ] Implement receipt submission using the backend's stock transaction rules.
+- [x] Build receipt review with clear product, size, quantity, price and destination branch summaries. S24+ staging 0.1.3 evidence: `s24-staging-receipt-review.png`.
+- [x] Implement receipt submission using the backend's stock transaction rules. Native send and identical-review replay preserved exactly three synthetic staging units on S24+.
 - [ ] Read back uncertain outcomes before retrying to prevent duplicate stock.
-- [ ] Distinguish successful stock receipt from pending product-photo synchronisation.
+- [x] Distinguish successful stock receipt from pending product-photo synchronisation in the UI. Forced photo-transfer failure acceptance remains open.
 - [ ] Provide actionable photo-sync retry without receiving the same stock again.
 - [ ] Build receipt history, stock search, variants and relevant stock movement views.
 - [ ] Verify the entire flow reconciles photos, variants and actual sellable units correctly.

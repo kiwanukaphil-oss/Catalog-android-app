@@ -25,14 +25,25 @@ class CatalogApi(private val token: String = "", private val branch: String = ""
         .readTimeout(45, TimeUnit.SECONDS).writeTimeout(60, TimeUnit.SECONDS)
         .callTimeout(90, TimeUnit.SECONDS).retryOnConnectionFailure(false).build()) : IntakeGateway {
 
-    /** Preserve both API envelope styles and bound response size; gateway HTML must become an actionable failure. */
+    /** Retry one connection reset only for reads, including the POS's explicitly read-only pricing-workspace POST. */
     fun request(path: String, method: String = "GET", body: RequestBody? = null): JSONObject {
+        return try { requestOnce(path, method, body) }
+        catch (reset: java.net.SocketException) {
+            if (method == "GET" || (method == "POST" && path == "/catalog/pricing/workspace")) requestOnce(path, method, body)
+            else throw reset
+        }
+    }
+
+    /** Preserve both API envelope styles and bound response size; gateway HTML must become an actionable failure. */
+    private fun requestOnce(path: String, method: String, body: RequestBody?): JSONObject {
         val request = Request.Builder().url(root + path).header("Accept", "application/json")
         if (token.isNotEmpty()) request.header("Authorization", "Bearer $token")
         if (branch.isNotEmpty()) request.header("X-Branch-Id", branch)
         client.newCall(request.method(method, body).build()).execute().use { response ->
             val source = response.body?.source()
-            if (source?.request(2_000_001) == true) throw IOException("The service response is too large.")
+            // Reviewed pricing supports up to 10,000 variant rows; retain a finite bound for that explicit contract.
+            val responseLimit = if (path.startsWith("/catalog/pricing/")) 16_000_000L else 2_000_000L
+            if (source?.request(responseLimit + 1) == true) throw IOException("The service response is too large.")
             val text = source?.readUtf8().orEmpty()
             val json = runCatching { JSONObject(text) }.getOrNull()
             if (!response.isSuccessful) throw CatalogHttpException(response.code,
