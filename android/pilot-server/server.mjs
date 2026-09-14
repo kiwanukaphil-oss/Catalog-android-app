@@ -86,6 +86,7 @@ export async function createPilotServer({ directory, port = 5117 } = {}) {
     }
     const owner = state.sessions[req.headers.authorization?.replace(/^Bearer /, '')];
     if (!owner) throw fail(401, 'Session expired. Sign in again.');
+    if (route === '/api/auth/me') return reply(res, 200, { user: { default_branch_id: BRANCH } });
     if (route === '/api/catalog/session') return reply(res, 200, { data: {
       id: owner === 'pilot' ? '30000000-0000-4000-8000-000000000001' : '30000000-0000-4000-8000-000000000002',
       full_name: owner === 'pilot' ? 'Pilot colleague' : 'Second colleague', username: owner, can_upload: true,

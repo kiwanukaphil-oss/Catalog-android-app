@@ -14,7 +14,9 @@ private val CatalogLight = lightColorScheme(
     surfaceVariant = Color(0xFFEEEDEA), onSurfaceVariant = Color(0xFF697277),
     secondaryContainer = Color(0xFFE6EDEF), onSecondaryContainer = Color(0xFF24465A),
     outline = Color(0xFFC8CFCD), outlineVariant = Color(0xFFDFE1DC),
-    surfaceContainer = Color(0xFFF6F5F2)
+    surfaceContainer = Color(0xFFF6F5F2), surfaceContainerHigh = Color.White,
+    surfaceContainerHighest = Color(0xFFEEEDEA), surfaceContainerLow = Color.White,
+    surfaceTint = Color(0xFF24465A), secondary = Color(0xFF24465A)
 )
 
 private val CatalogDark = darkColorScheme(
@@ -24,7 +26,9 @@ private val CatalogDark = darkColorScheme(
     surfaceVariant = Color(0xFF283337), onSurfaceVariant = Color(0xFFAEB8B9),
     secondaryContainer = Color(0xFF31434C), onSecondaryContainer = Color(0xFFE4EEF2),
     outline = Color(0xFF536368), outlineVariant = Color(0xFF364247),
-    surfaceContainer = Color(0xFF182024)
+    surfaceContainer = Color(0xFF182024), surfaceContainerHigh = Color(0xFF202B30),
+    surfaceContainerHighest = Color(0xFF283337), surfaceContainerLow = Color(0xFF202B30),
+    surfaceTint = Color(0xFFBBD7E3), secondary = Color(0xFFBBD7E3)
 )
 
 /** Apply the web workspace palette and restrained corners to native controls in every screen. */

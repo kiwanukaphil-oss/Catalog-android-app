@@ -20,6 +20,7 @@ import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class PilotRemainingChecksTest {
+    @org.junit.Before fun requireFixtureBuild() = org.junit.Assume.assumeFalse(BuildConfig.IS_STAGING)
     private val app get() = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as PilotApplication
     private val dao get() = app.database.pilotDao()
 

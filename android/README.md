@@ -4,6 +4,8 @@ Track completed work and remaining phases in the [Android checklist and roadmap]
 
 Native Kotlin / Jetpack Compose application for the first capture-and-recovery phase. The app is named **K-Line Pilot**, package `com.kline.catalog.pilot`, and requires Android 14 or later. It connects exclusively to an isolated loopback fixture service; there is no production endpoint selector.
 
+The separate **K-Line Staging** build connects to the isolated hosted API, supports actual uploads and live Stock, and installs alongside Pilot with independent private data. See [staging setup and verification](../docs/android-staging.md).
+
 ## What is implemented
 
 Latest pilot: **0.1.2**, with web-aligned navigation, light/dark appearance, multi-photo selection and consecutive camera capture. The unavailable A26 still has 0.1.0. Version 0.1.1 introduced expired-session messaging and sign-out cancellation ordering.

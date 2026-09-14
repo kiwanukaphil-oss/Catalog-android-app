@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kline.pilot.BuildConfig
 import com.kline.pilot.PilotViewModel
 import com.kline.pilot.PilotUiState
 import com.kline.pilot.data.*
@@ -71,20 +72,20 @@ import java.time.LocalDate
 
 /** Pilot credentials are fixture-only and visibly labelled; staff must not enter their production password. */
 @Composable private fun SignInScreen(state: PilotUiState, signIn: (String, String) -> Unit) {
-    var username by rememberSaveable { mutableStateOf("pilot") }
+    var username by rememberSaveable { mutableStateOf(if (BuildConfig.IS_STAGING) "" else "pilot") }
     var password by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Spacer(Modifier.height(40.dp))
         Text("K\u2014LINE.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         Text("Merchandise workspace", style = MaterialTheme.typography.headlineMedium)
-        Text("ANDROID PILOT · TEST DATA", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        Text(if (BuildConfig.IS_STAGING) "STAGING · TEST DATA" else "ANDROID PILOT · TEST DATA", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         Text("Sign in to your test workspace.")
         OutlinedTextField(username, { username = it }, label = { Text("Username") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(password, { password = it }, label = { Text("Password") }, singleLine = true,
             visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
         Button(onClick = { signIn(username, password); password = "" }, enabled = !state.busy,
             shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(if (state.busy) "Connecting…" else "Sign in") }
-        Text("Test account: pilot / pilot-only\nUse the connected test workstation. Do not use your shop password.",
+        Text(if (BuildConfig.IS_STAGING) "Use your staging account. This workspace uses isolated test data." else "Test account: pilot / pilot-only\nUse the connected test workstation. Do not use your shop password.",
             style = MaterialTheme.typography.bodySmall)
     }
 }
@@ -125,7 +126,7 @@ import java.time.LocalDate
         }); return
     }
     Scaffold(topBar = {
-        TopAppBar(title = { Column { Text("K\u2014LINE.", fontWeight = FontWeight.Bold); Text("ANDROID PILOT · TEST DATA", style = MaterialTheme.typography.labelSmall) } },
+        TopAppBar(title = { Column { Text("K\u2014LINE.", fontWeight = FontWeight.Bold); Text(if (BuildConfig.IS_STAGING) "STAGING · TEST DATA" else "ANDROID PILOT · TEST DATA", style = MaterialTheme.typography.labelSmall) } },
             actions = { IconButton(onClick = toggleAppearance) { Icon(if (darkAppearance) Icons.Outlined.LightMode else Icons.Outlined.DarkMode, if (darkAppearance) "Use light appearance" else "Use dark appearance") }
                 IconButton(onClick = { model.refresh() }, enabled = !state.busy) { Icon(Icons.Outlined.Refresh, "Refresh uploads") }
                 IconButton(onClick = { model.signOut() }, enabled = !state.busy) { Icon(Icons.Outlined.Logout, "Sign out and lock drafts") } })
@@ -139,7 +140,9 @@ import java.time.LocalDate
                         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant, indicatorColor = MaterialTheme.colorScheme.secondaryContainer)) }
         }
     }) { padding ->
-        LazyColumn(Modifier.fillMaxSize().padding(padding), state = receivingScroll, contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (tab == 2 && BuildConfig.IS_STAGING) {
+            StockScreen(session, Modifier.padding(padding)) { selectBranch = true }
+        } else LazyColumn(Modifier.fillMaxSize().padding(padding), state = receivingScroll, contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
                 OutlinedButton(onClick = { selectBranch = true }, enabled = !state.busy) {
                     Icon(Icons.Outlined.LocationOn, null); Spacer(Modifier.width(6.dp))

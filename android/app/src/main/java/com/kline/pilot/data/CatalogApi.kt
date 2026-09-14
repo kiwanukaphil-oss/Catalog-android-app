@@ -44,7 +44,11 @@ class CatalogApi(private val token: String = "", private val branch: String = ""
     private fun jsonBody(json: JSONObject) = json.toString().toRequestBody("application/json".toMediaType())
     fun login(username: String, password: String): String = request("/auth/login", "POST",
         jsonBody(JSONObject().put("username", username).put("password", password))).getString("token")
-    fun session(): JSONObject = request("/catalog/session").getJSONObject("data")
+    fun session(): JSONObject {
+        if (branch.isNotEmpty()) return request("/catalog/session").getJSONObject("data")
+        val defaultBranch = request("/auth/me").getJSONObject("user").getString("default_branch_id")
+        return CatalogApi(token, defaultBranch, root, client).request("/catalog/session").getJSONObject("data")
+    }
     fun reference(): JSONObject = request("/catalog/reference-data").getJSONObject("data")
     override fun createDelivery(delivery: Delivery) { request("/catalog-workspace/batches", "POST",
         jsonBody(JSONObject().put("id", delivery.id).put("title", delivery.title))) }

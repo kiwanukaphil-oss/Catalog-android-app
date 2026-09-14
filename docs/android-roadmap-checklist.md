@@ -6,7 +6,7 @@
 
 This is the current progress tracker for the Android app. The [proposal](android-app-proposal.md) explains the direction; the [prototype report](android-prototype-report.md) records detailed evidence. Existing website features do not count as completed native Android features.
 
-Checked boxes mean completed within the stated scope. Unchecked boxes mean work or verification remains. **Deferred** means waiting for a dependency, not cancelled. A phase is complete only when its acceptance gate is met. Obtain owner confirmation before starting the next phase and before committing changes.
+Checked boxes mean completed within the stated scope. Unchecked boxes mean work or verification remains. **Deferred** means waiting for a dependency, not cancelled. A phase is complete only when its acceptance gate is met. The owner authorized autonomous development, commits and pushes on 14 September 2026; stop only for a blocker requiring their input.
 
 ## At a glance
 
@@ -16,11 +16,11 @@ Checked boxes mean completed within the stated scope. Unchecked boxes mean work 
 | Native capture, local queue and test uploads | Implemented | Finish physical-device and failure-case acceptance |
 | S24+ verification | Partially complete | Reboot, network, storage, permissions and broader usability checks |
 | A26 verification | Partially complete; physical checks deferred | Install 0.1.1, camera/gallery and remaining acceptance checks |
-| Actual backend integration | Not completed | Hosted isolated environment and real contract/permission validation |
+| Actual backend integration | HTTPS capture and Stock verified | Full role matrix, modern workspace runtime and remaining write contracts |
 | Native AI review, matching and receiving | Not implemented | Build and verify the full merchandise-to-POS journey |
 | Release and shop rollout | Not started | Signed distribution, support preparation and controlled two-phone trial |
 
-The current APK uses a workstation-only test service through USB forwarding. It is not a production-ready POS app. Pricing and Stock tabs are informational placeholders; navigation follows the web. No production inventory was changed by this prototype.
+K-Line Pilot uses a workstation-only fixture through USB. The separate K-Line Staging build uses isolated HTTPS services and implements live Stock; Pricing remains a placeholder. Neither is a production-ready POS app. No production inventory was changed. See [staging integration](android-staging.md) for build instructions and verified scope.
 
 ## 1. Direction and preparation
 
@@ -62,7 +62,7 @@ Evidence: [device assessment](android-device-assessment.md), [screen flow](andro
 - [x] Keep the camera open for consecutive captures; Done returns to Receiving without an extra capture or automatic upload.
 - [x] Show committed photo count and preparation progress; prevent overlapping preparation actions.
 
-See [web alignment](android-web-alignment.md) and [multi-photo verification](../verification/android-pilot/multi-photo-report.md). This increment continues capture development; hosted integration and the two-phone acceptance gate remain open.
+See [web alignment](android-web-alignment.md) and [multi-photo verification](../verification/android-pilot/multi-photo-report.md). This increment continues capture development; full backend integration and the two-phone acceptance gate remain open.
 
 ### Verified evidence
 

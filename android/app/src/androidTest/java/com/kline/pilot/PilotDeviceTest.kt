@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class PilotDeviceTest {
+    @org.junit.Before fun requireFixtureBuild() = org.junit.Assume.assumeFalse(BuildConfig.IS_STAGING)
     private val app get() = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as PilotApplication
     private val device get() = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 

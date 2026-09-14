@@ -8,6 +8,18 @@ import org.junit.Test
 import java.io.File
 
 class CatalogApiTest {
+    /** Catalog capabilities require the authenticated user's default branch even before workspace selection. */
+    @Test fun sessionLoadsDefaultBranchBeforeCapabilities() {
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setBody("""{"user":{"default_branch_id":"branch-a"}}"""))
+            server.enqueue(MockResponse().setBody("""{"data":{"id":"account"}}"""))
+            assertEquals("account", CatalogApi("token", root = server.url("/api").toString()).session().getString("id"))
+            assertEquals("/api/auth/me", server.takeRequest().path)
+            val capabilities = server.takeRequest()
+            assertEquals("/api/catalog/session", capabilities.path)
+            assertEquals("branch-a", capabilities.getHeader("X-Branch-Id"))
+        }
+    }
     @Test fun retryAfterHonoursSecondsAndHttpDate() {
         assertEquals(61_000L, retryAfterTimestamp("60", 1_000L))
         assertEquals(1_000L, retryAfterTimestamp("-1", 1_000L))

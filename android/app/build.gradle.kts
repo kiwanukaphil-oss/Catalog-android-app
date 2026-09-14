@@ -17,10 +17,26 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Loopback is forwarded through ADB to the isolated fixture server; no production switch exists.
         buildConfigField("String", "API_ROOT", "\"http://127.0.0.1:5117/api\"")
+        buildConfigField("boolean", "IS_STAGING", "false")
+        manifestPlaceholders["appLabel"] = "K-Line Pilot"
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
-    buildTypes { release { isMinifyEnabled = false } }
+    buildTypes {
+        release { isMinifyEnabled = false }
+        create("staging") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".staging"
+            versionNameSuffix = "-staging"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("debug")
+            // Separate app storage prevents fixture drafts or credentials crossing into the hosted test service.
+            buildConfigField("String", "API_ROOT", "\"https://pos-api-production-07c3.up.railway.app/api\"")
+            buildConfigField("boolean", "IS_STAGING", "true")
+            manifestPlaceholders["appLabel"] = "K-Line Staging"
+        }
+    }
+    testBuildType = providers.gradleProperty("testBuildType").getOrElse("debug")
     testOptions { unitTests.isReturnDefaultValues = true }
     sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
 }
